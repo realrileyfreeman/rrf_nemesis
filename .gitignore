@@ -1,4 +1,7 @@
+venv/
 __pycache__/
-*.json
 *.pyc
+*.pyo
+*.json
+*.html
 .env
