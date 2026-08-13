@@ -120,13 +120,13 @@ function App() {
     if (!dastResults) return "";
     const vulns = dastResults.web_vulnerabilities.length;
     const paths = dastResults.discovered_paths.length;
-    let text = `L'audit dynamique a identifié ${vulns} vulnérabilité(s) web critique(s) et ${dastResults.open_ports.length} port(s) ouvert(s). `;
+    let text = `The dynamic audit identified ${vulns} critical web vulnerability(ies) and ${dastResults.open_ports.length} open port(s). `;
     if (vulns > 0 || getMissingHeadersCount() > 2) {
-      text += "La posture de sécurité globale de l'application est CRITIQUE. Une remédiation immédiate est requise sur les endpoints exposés.";
+      text += "The overall security posture of the application is CRITICAL. Immediate remediation is required on exposed endpoints.";
     } else if (paths > 5) {
-      text += "La posture de sécurité est MOYENNE. De nombreux chemins sont exposés, augmentant la surface d'attaque.";
+      text += "The security posture is MODERATE. Multiple paths are exposed, increasing the attack surface.";
     } else {
-      text += "La posture de sécurité est SATISFAISANTE. Aucune vulnérabilité majeure n'a été détectée.";
+      text += "The security posture is SATISFACTORY. No major vulnerabilities were detected.";
     }
     return text;
   };
@@ -135,13 +135,13 @@ function App() {
     if (!sastResults) return "";
     const total = sastResults.results.length;
     const errors = sastResults.results.filter(r => r.extra.severity.toUpperCase().includes('ERROR')).length;
-    let text = `L'analyse statique du code (Semgrep) a identifié ${total} faille(s) au total, dont ${errors} de sévérité HAUTE. `;
+    let text = `The static code analysis (Semgrep) identified ${total} total flaw(s), including ${errors} of HIGH severity. `;
     if (errors > 0) {
-      text += "Le code source nécessite une révision URGENTE des pratiques de développement sécurisé, notamment en corrigeant les failles critiques mises en évidence.";
+      text += "The source code requires an URGENT review of secure development practices, particularly to address highlighted critical flaws.";
     } else if (total > 0) {
-      text += "Le code présente des failles mineures (Avertissements). Une revue de code est recommandée pour améliorer la robustesse.";
+      text += "The code contains minor flaws (Warnings). A code review is recommended to improve robustness.";
     } else {
-      text += "Aucune faille n'a été détectée. Le code suit les bonnes pratiques de sécurité.";
+      text += "No vulnerabilities were detected. The code follows good security practices.";
     }
     return text;
   };
@@ -195,7 +195,7 @@ function App() {
           <div className="relative flex items-center">
             <FolderOpen className="absolute left-4 text-cyber-muted" size={20} />
             <input 
-              type="text" placeholder="/chemin/vers/code/source"
+              type="text" placeholder="/path/to/source/code"
               className="w-full bg-cyber-card border-2 border-cyber-border rounded-full py-4 pl-12 pr-32 text-white focus:outline-none focus:border-cyber-primary transition-colors font-mono text-sm"
               value={targetPath} onChange={(e) => setTargetPath(e.target.value)} disabled={isScanningSast}
             />
