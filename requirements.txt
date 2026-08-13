@@ -1,4 +1,9 @@
-requests
-beautifulsoup4
-colorama
-tqdm
+fastapi>=0.100.0
+uvicorn>=0.23.0
+pydantic>=2.0.0
+playwright>=1.38.0
+semgrep>=1.0.0
+requests>=2.31.0
+beautifulsoup4>=4.12.0
+colorama>=0.4.6
+tqdm>=4.66.0
