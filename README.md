@@ -1,10 +1,65 @@
 # RRF Nemesis Master Edition 🛡️
 
+*🇬🇧 English version below.*
+
+**RRF Nemesis** a évolué d'un simple scanner en ligne de commande Python vers une **Plateforme de Sécurité Applicative Complète**. Il intègre désormais des capacités **DAST** (Tests de Sécurité Applicative Dynamique) et **SAST** (Analyse Statique de Code), le tout centralisé dans un Dashboard React moderne et professionnel.
+
+Ce projet a été pensé pour des environnements avancés en Cybersécurité et GRC (Gouvernance, Risques et Conformité).
+
+## ✨ Fonctionnalités Principales (FR)
+
+### 1. Scan Web Dynamique (DAST)
+- **Moteur Navigateur Headless (Playwright) :** Capable d'auditer les applications modernes (Single Page Applications - React, Vue, Angular) en rendant l'intégralité du JavaScript avant l'analyse.
+- **Fuzzing Intelligent :** Injection contextuelle de payloads pour contourner les défenses, incluant la détection de Blind SQLi temporelles (`SELECT(SLEEP(5))`) et de failles XSS basées sur le DOM.
+- **Scan de Ports & Fingerprinting :** Identification profonde des technologies de la cible via l'analyse des en-têtes HTTP et du DOM.
+
+### 2. Analyse de Code Statique (SAST)
+- **Scan Universel (Semgrep) :** Intégration de Semgrep, le standard industriel de l'analyse statique. Capable de trouver des secrets en dur, des fonctions cryptographiques obsolètes et des failles structurelles à travers de multiples langages de programmation.
+- **Audit Local :** Analyse sécurisée du code source en local avant son déploiement.
+
+### 3. Remédiation IA (Auto-Fix) 🤖
+- **Moteur Heuristique :** Lorsqu'une vulnérabilité est trouvée, un simple clic sur le bouton **"✨ Auto-Fix"** génère le snippet de code exact (Python, JS, SQL ou Bash) nécessaire pour la corriger (ex: Requêtes préparées, DOMPurify, règles de Pare-feu).
+
+### 4. Reporting Exécutif GRC
+- **Export PDF :** Transforme le tableau de bord technique en un rapport exécutif épuré, structuré et professionnel, prêt à être présenté à un RSSI (CISO) ou un comité de direction. Inclut des KPIs de haut niveau et une analyse de la posture de risque.
+
+## 🚀 Installation & Utilisation
+
+### Prérequis
+- Python 3.12+
+- Node.js & npm (pour le frontend)
+- Navigateur Chromium (via Playwright)
+
+### Démarrer le Backend (FastAPI)
+```bash
+git clone https://github.com/realrileyfreeman/rrf_nemesis.git
+cd rrf_nemesis
+
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+playwright install chromium
+
+PYTHONPATH=. uvicorn api:app --host 0.0.0.0 --port 8001
+```
+
+### Démarrer le Frontend (React + Vite)
+```bash
+cd rrf_nemesis/frontend
+npm install
+npm run dev
+```
+Le dashboard sera accessible sur `http://localhost:5174`.
+
+---
+
+# RRF Nemesis Master Edition 🛡️ (English)
+
 **RRF Nemesis** has evolved from a simple Python CLI scanner into a **Full-Spectrum Application Security Platform**. It now includes both **DAST** (Dynamic Application Security Testing) and **SAST** (Static Application Security Testing) capabilities, all wrapped in a sleek, modern, and highly professional React Dashboard.
 
 This project is tailored for advanced Cybersecurity / GRC environments.
 
-## ✨ Key Features
+## ✨ Key Features (EN)
 
 ### 1. Dynamic Web Scanning (DAST)
 - **Headless Browser Engine (Playwright):** Capable of auditing modern Single Page Applications (React, Vue, Angular) by rendering full JavaScript before scanning.
@@ -30,25 +85,19 @@ This project is tailored for advanced Cybersecurity / GRC environments.
 
 ### Backend Setup (FastAPI)
 ```bash
-# Clone the repository
 git clone https://github.com/realrileyfreeman/rrf_nemesis.git
 cd rrf_nemesis
 
-# Create and activate virtual environment
 python3 -m venv venv
 source venv/bin/activate
-
-# Install dependencies (Playwright, Semgrep, FastAPI, etc.)
-pip install -r requirements.txt # Or install manually if no requirements.txt is provided yet
+pip install -r requirements.txt
 playwright install chromium
 
-# Run the API
 PYTHONPATH=. uvicorn api:app --host 0.0.0.0 --port 8001
 ```
 
 ### Frontend Setup (React + Vite)
 ```bash
-# In a new terminal
 cd rrf_nemesis/frontend
 npm install
 npm run dev
