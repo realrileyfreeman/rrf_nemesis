@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>NEMESIS Report — https://noscopstudio.com</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0d1117; color: #c9d1d9; }
+    header { background: linear-gradient(135deg, #6e40c9, #1f6feb); padding: 2rem; text-align: center; }
+    header h1 { font-size: 2rem; letter-spacing: 4px; color: #fff; }
+    header p { margin-top: .4rem; color: #ccc; font-size: .9rem; }
+    .summary { display: flex; gap: 1rem; padding: 1.5rem 2rem; flex-wrap: wrap; }
+    .card { flex: 1; min-width: 150px; background: #161b22; border: 1px solid #30363d;
+             border-radius: 8px; padding: 1.2rem; text-align: center; }
+    .card .num { font-size: 2.2rem; font-weight: 700; }
+    .card .label { font-size: .8rem; color: #8b949e; margin-top: .3rem; text-transform: uppercase; }
+    .num.danger { color: #f85149; }
+    .num.warn { color: #e3b341; }
+    .num.ok { color: #3fb950; }
+    section { margin: 0 2rem 2rem; }
+    section h2 { font-size: 1rem; text-transform: uppercase; letter-spacing: 2px;
+                  color: #8b949e; border-bottom: 1px solid #30363d; padding-bottom: .5rem; margin-bottom: 1rem; }
+    table { width: 100%; border-collapse: collapse; background: #161b22;
+             border: 1px solid #30363d; border-radius: 8px; overflow: hidden; }
+    th { background: #21262d; color: #8b949e; font-size: .75rem; text-transform: uppercase;
+          letter-spacing: 1px; padding: .7rem 1rem; text-align: left; }
+    td { padding: .65rem 1rem; border-top: 1px solid #21262d; font-size: .875rem; }
+    td.banner { font-family: monospace; word-break: break-all; color: #a5d6ff; }
+    td.empty { text-align: center; color: #484f58; padding: 1.5rem; }
+    .badge { display: inline-block; padding: .2em .6em; border-radius: 4px;
+              font-size: .78rem; font-weight: 600; font-family: monospace; }
+    .badge-open { background: #1f4b2e; color: #3fb950; }
+    .badge-vuln { background: #3d1c1c; color: #f85149; }
+    .badge-warn { background: #3d2e00; color: #e3b341; }
+    footer { text-align: center; padding: 1.5rem; color: #484f58; font-size: .8rem; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>N E M E S I S</h1>
+    <p>Security Audit Report &nbsp;|&nbsp; Target: <strong>https://noscopstudio.com</strong> &nbsp;|&nbsp; 2026-03-14 13:59:29</p>
+  </header>
+
+  <div class="summary">
+    <div class="card"><div class="num danger">2</div><div class="label">Open Ports</div></div>
+    <div class="card"><div class="num ok">0</div><div class="label">Vulnerabilities</div></div>
+    <div class="card"><div class="num warn">3</div><div class="label">Missing Headers</div></div>
+    <div class="card"><div class="num warn">16</div><div class="label">Exposed Paths</div></div>
+  </div>
+
+  <section>
+    <h2>Open Ports</h2>
+    <table><thead><tr><th>Port</th><th>Banner</th></tr></thead>
+    <tbody><tr><td><span class="badge badge-open">80</span></td><td class="banner">HTTP/1.1 200 OK
+Date: Sat, 14 Mar 2026 12:59:29 GMT
+Content-Type: text/html
+Content-Length: 32012
+Connection: close
+Vary: Accept-Encoding
+Server: hcdn
+alt-svc: h3=":443"; ma=86400
+x-hcdn-request-id: 9e8e4455fc83c5e18639873ed8d4def1-fra-edge3
+Expires: Sat, 14 Mar 2026 12:59:28 GMT
+Cache-Control: no-cache
+Accept-Ranges: bytes</td></tr><tr><td><span class="badge badge-open">443</span></td><td class="banner">HTTP/1.1 400 Bad Request
+Date: Sat, 14 Mar 2026 12:59:29 GMT
+Content-Type: text/html
+Content-Length: 248
+Connection: close
+Server: hcdn
+alt-svc: h3=":443"; ma=86400
+x-hcdn-request-id: 2bd41e04cfdcc31eb40a7a8a16cc0937-fra-edge4</td></tr></tbody></table>
+  </section>
+
+  <section>
+    <h2>Technologies Detected</h2>
+    <table><thead><tr><th>Category</th><th>Technology</th><th>Source</th></tr></thead>
+    <tbody><tr><td><span class="badge badge-warn">Server</span></td><td>hcdn</td><td class="banner">Header: Server</td></tr><tr><td><span class="badge badge-warn">Server</span></td><td>PHP/8.3.27</td><td class="banner">Header: X-Powered-By</td></tr><tr><td><span class="badge badge-warn">Framework</span></td><td>PHP</td><td class="banner">Cookie: PHPSESSID</td></tr><tr><td><span class="badge badge-warn">CMS/Framework</span></td><td>WordPress</td><td class="banner">HTML body</td></tr><tr><td><span class="badge badge-warn">CMS/Framework</span></td><td>Bootstrap</td><td class="banner">HTML asset</td></tr><tr><td><span class="badge badge-warn">CMS/Framework</span></td><td>jQuery</td><td class="banner">HTML asset</td></tr><tr><td><span class="badge badge-warn">Generator</span></td><td>WordPress 6.9.4</td><td class="banner">Meta generator</td></tr></tbody></table>
+  </section>
+
+  <section>
+    <h2>Web Vulnerabilities</h2>
+    <table><thead><tr><th>Type</th><th>URL</th></tr></thead>
+    <tbody><tr><td colspan="2" class="empty">No vulnerabilities found</td></tr></tbody></table>
+  </section>
+
+  <section>
+    <h2>Security Headers</h2>
+    <table><thead><tr><th>Header</th><th>Status</th></tr></thead>
+    <tbody><tr><td>X-Frame-Options</td><td><span class="badge badge-vuln">MISSING</span></td></tr><tr><td>Content-Security-Policy</td><td><span class="badge badge-open">PRESENT</span></td></tr><tr><td>Strict-Transport-Security</td><td><span class="badge badge-vuln">MISSING</span></td></tr><tr><td>X-XSS-Protection</td><td><span class="badge badge-vuln">MISSING</span></td></tr></tbody></table>
+  </section>
+
+  <section>
+    <h2>Discovered Paths</h2>
+    <table><thead><tr><th>Code</th><th>URL</th></tr></thead>
+    <tbody><tr><td><span class="badge badge-warn">403</span></td><td class="banner">https://noscopstudio.com/.htaccess</td></tr><tr><td><span class="badge badge-warn">403</span></td><td class="banner">https://noscopstudio.com/.htpasswd</td></tr><tr><td><span class="badge badge-warn">403</span></td><td class="banner">https://noscopstudio.com/backup.sql</td></tr><tr><td><span class="badge badge-warn">403</span></td><td class="banner">https://noscopstudio.com/.git</td></tr><tr><td><span class="badge badge-warn">403</span></td><td class="banner">https://noscopstudio.com/db.sql</td></tr><tr><td><span class="badge badge-warn">403</span></td><td class="banner">https://noscopstudio.com/config.json</td></tr><tr><td><span class="badge badge-warn">403</span></td><td class="banner">https://noscopstudio.com/dump.sql</td></tr><tr><td><span class="badge badge-warn">403</span></td><td class="banner">https://noscopstudio.com/config.php</td></tr><tr><td><span class="badge badge-warn">403</span></td><td class="banner">https://noscopstudio.com/error.log</td></tr><tr><td><span class="badge badge-warn">403</span></td><td class="banner">https://noscopstudio.com/access.log</td></tr><tr><td><span class="badge badge-warn">301</span></td><td class="banner">https://noscopstudio.com/wp-admin</td></tr><tr><td><span class="badge badge-warn">403</span></td><td class="banner">https://noscopstudio.com/wp-config.php</td></tr><tr><td><span class="badge badge-warn">403</span></td><td class="banner">https://noscopstudio.com/crossdomain.xml</td></tr><tr><td><span class="badge badge-open">200</span></td><td class="banner">https://noscopstudio.com/robots.txt</td></tr><tr><td><span class="badge badge-warn">301</span></td><td class="banner">https://noscopstudio.com/sitemap.xml</td></tr><tr><td><span class="badge badge-warn">403</span></td><td class="banner">https://noscopstudio.com/config.yml</td></tr></tbody></table>
+  </section>
+
+  <footer>Generated by NEMESIS Security Scanner — Educational use only</footer>
+</body>
+</html>

@@ -1,99 +1,63 @@
-# RRF NEMESIS — Advanced Pentest Scanner
+# RRF Nemesis Master Edition 🛡️
 
-![Python](https://img.shields.io/badge/Python-3.x-blue?style=flat&logo=python)
-![License](https://img.shields.io/badge/License-MIT-green)
-![Educational](https://img.shields.io/badge/Use-Educational%20Only-red)
+**RRF Nemesis** has evolved from a simple Python CLI scanner into a **Full-Spectrum Application Security Platform**. It now includes both **DAST** (Dynamic Application Security Testing) and **SAST** (Static Application Security Testing) capabilities, all wrapped in a sleek, modern, and highly professional React Dashboard.
 
----
+This project is tailored for advanced Cybersecurity / GRC environments.
 
-> **FR** — Outil de reconnaissance et d'audit de sécurité modulaire, conçu à des fins éducatives.
-> **EN** — Modular security reconnaissance and auditing tool, designed for educational purposes.
+## ✨ Key Features
 
----
+### 1. Dynamic Web Scanning (DAST)
+- **Headless Browser Engine (Playwright):** Capable of auditing modern Single Page Applications (React, Vue, Angular) by rendering full JavaScript before scanning.
+- **Intelligent Fuzzing:** Contextual payload injection for advanced evasion, including Time-Based Blind SQLi detection (`SELECT(SLEEP(5))`) and DOM-based XSS bypasses.
+- **Port Scanning & Fingerprinting:** Deep technology stack identification based on HTTP headers and DOM signatures.
 
-## Disclaimer / Avertissement
+### 2. Static Code Analysis (SAST)
+- **Universal Scanning (Semgrep):** Replaced basic linters with Semgrep, the industry-standard SAST engine. Capable of finding hardcoded secrets, dangerous functions, and structural vulnerabilities across multiple languages.
+- **Local Directory Audit:** Scans local codebases securely before deployment.
 
-**FR** : Cet outil est destiné **uniquement** à des fins éducatives et à des audits de sécurité **autorisés**. L'utilisation sur des systèmes sans autorisation explicite est illégale. L'auteur décline toute responsabilité en cas d'utilisation abusive.
+### 3. AI-Powered Auto-Fix 🤖
+- **Heuristic Remediation Engine:** Finds a vulnerability? Click **"✨ Auto-Fix"**. Nemesis will instantly generate the exact code snippet (Python, JS, SQL, or Bash) required to fix the vulnerability (e.g., Prepared Statements, DOMPurify, Firewall rules).
 
-**EN** : This tool is intended **exclusively** for educational purposes and **authorized** security audits. Using it against systems without explicit permission is illegal. The author takes no responsibility for any misuse.
+### 4. GRC Executive Reporting
+- **PDF Export:** Transforms the technical "hacker-themed" dashboard into a clean, professional, white-label Executive Report ready to be handed to a CISO or board of directors. Includes high-level KPIs and risk posture analysis.
 
----
+## 🚀 Installation & Usage
 
-## Fonctionnalités / Features
+### Prerequisites
+- Python 3.12+
+- Node.js & npm (for the frontend)
+- Chromium browsers for Playwright
 
-| Module | FR | EN |
-|---|---|---|
-| **Scan de ports** | Scan TCP multi-threadé (ThreadPoolExecutor) avec banner grabbing | Multi-threaded TCP port scan with banner grabbing |
-| **Fingerprinting** | Détection de technologies (serveur, CMS, frameworks, cookies) | Technology detection (server, CMS, frameworks, cookies) |
-| **Web Fuzzing** | Détection SQLi et XSS réfléchi sur les formulaires | SQLi and reflected XSS detection on forms |
-| **Headers Audit** | Vérification des headers de sécurité HTTP | HTTP security headers audit |
-| **Dir Bruteforce** | Recherche de fichiers/dossiers cachés avec wordlist | Hidden files/directories discovery with wordlist |
-| **Rapport HTML/JSON** | Export du rapport en HTML (dark theme) ou JSON | Report export in HTML (dark theme) or JSON |
-
----
-
-## Installation
-
+### Backend Setup (FastAPI)
 ```bash
+# Clone the repository
 git clone https://github.com/realrileyfreeman/rrf_nemesis.git
 cd rrf_nemesis
-pip install -r requirements.txt
+
+# Create and activate virtual environment
+python3 -m venv venv
+source venv/bin/activate
+
+# Install dependencies (Playwright, Semgrep, FastAPI, etc.)
+pip install -r requirements.txt # Or install manually if no requirements.txt is provided yet
+playwright install chromium
+
+# Run the API
+PYTHONPATH=. uvicorn api:app --host 0.0.0.0 --port 8001
 ```
 
----
-
-## Utilisation / Usage
-
-**Scan basique / Basic scan :**
+### Frontend Setup (React + Vite)
 ```bash
-python3 rrf_nemesis.py -t http://target.com
+# In a new terminal
+cd rrf_nemesis/frontend
+npm install
+npm run dev
 ```
+The dashboard will be available at `http://localhost:5174`.
 
-**Scan complet avec rapport HTML / Full scan with HTML report :**
-```bash
-python3 rrf_nemesis.py -t http://target.com --scan-all -o report.html
-```
+## 🛠️ Tech Stack
+- **Backend:** Python 3.12, FastAPI, Playwright, Semgrep, BeautifulSoup4, Requests.
+- **Frontend:** React (TypeScript), Vite, TailwindCSS v4, Lucide-React, Recharts.
 
-**Avec wordlist personnalisée / With custom wordlist :**
-```bash
-python3 rrf_nemesis.py -t http://target.com --wordlist /path/to/wordlist.txt -o report.json
-```
-
-### Arguments
-
-| Argument | Description |
-|---|---|
-| `-t`, `--target` | URL ou adresse IP cible / Target URL or IP |
-| `-o`, `--output` | Fichier de sortie `.json` ou `.html` / Output file `.json` or `.html` |
-| `--scan-all` | Scan complet des ports 1–65535 / Full port scan 1–65535 |
-| `--wordlist` | Wordlist personnalisée pour le bruteforce / Custom wordlist for bruteforce |
-
----
-
-## Architecture
-
-```
-NemesisScanner
-├── scan_ports()          — TCP scan (ThreadPoolExecutor, max 200 workers)
-├── fingerprint_tech()    — Détection de technologies
-├── check_web_vulns()     — SQLi + XSS + Security Headers
-├── brute_force_dirs()    — Directory bruteforce (max 20 workers)
-└── save_report()         — Export JSON ou HTML
-```
-
----
-
-## Dépendances / Dependencies
-
-```
-requests
-beautifulsoup4
-colorama
-tqdm
-```
-
----
-
-## Licence / License
-
-MIT — Free to use for educational and authorized testing purposes.
+## 📝 Disclaimer
+This tool is intended for educational purposes and authorized auditing only. Usage of RRF Nemesis for attacking targets without prior mutual consent is illegal. It is the end user's responsibility to obey all applicable local, state and federal laws.

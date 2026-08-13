@@ -93,79 +93,126 @@ class NemesisScanner: # Main Scanner Class
                 unit="port"
             ))
 
-    # MODULE 2: WEB FUZZING (SQLi & XSS) AND SECURITY HEADERS CHECK
+    # MODULE 2: WEB FUZZING (SQLi & XSS) AND SECURITY HEADERS CHECK (HEADLESS)
     def check_web_vulns(self):
         if not self.target.startswith("http"):
             self.print_log("Target is not a URL, skipping Web Module.", "ERROR")
             return
 
-        self.print_log("Analyzing Web Vulnerabilities (Crawling & Fuzzing)...", "INFO")
+        self.print_log("Analyzing Web Vulnerabilities (Headless Playwright)...", "INFO")
         
         try:
-            session = requests.Session()
-            session.headers.update({'User-Agent': USER_AGENT})
-            response = session.get(self.target, timeout=5)
-            soup = BeautifulSoup(response.text, "html.parser")
+            from playwright.sync_api import sync_playwright
+            with sync_playwright() as p:
+                browser = p.chromium.launch(headless=True)
+                page = browser.new_page(user_agent=USER_AGENT)
+                
+                # Intercept headers for Security Check
+                security_headers_checked = False
+                
+                def handle_response(response):
+                    nonlocal security_headers_checked
+                    if not security_headers_checked and response.url.rstrip("/") == self.target.rstrip("/"):
+                        headers = response.headers
+                        security_headers = ["x-frame-options", "content-security-policy", "strict-transport-security", "x-xss-protection"]
+                        for h in security_headers:
+                            if h not in headers:
+                                self.results["security_headers"][h.upper()] = "MISSING"
+                                self.print_log(f"Missing Security Header: {h.upper()}", "ERROR")
+                            else:
+                                self.results["security_headers"][h.upper()] = "PRESENT"
+                        security_headers_checked = True
 
+                page.on("response", handle_response)
+                
+                # Navigate to target
+                try:
+                    self.print_log("Loading page in Headless Browser...", "INFO")
+                    page.goto(self.target, timeout=15000, wait_until="networkidle")
+                except Exception as e:
+                    self.print_log(f"Playwright navigation timeout (may still render partially).", "ERROR")
+
+                html_content = page.content()
+                browser.close()
+
+            # Now parse the JS-rendered HTML with BeautifulSoup
+            soup = BeautifulSoup(html_content, "html.parser")
+            
             # 1. Forms Audit for XSS/SQLi
             forms = soup.find_all("form")
-            self.print_log(f"{len(forms)} forms found.", "INFO")
+            self.print_log(f"{len(forms)} forms found in rendered DOM.", "INFO")
+
+            session = requests.Session()
+            session.headers.update({'User-Agent': USER_AGENT})
 
             for form in forms:
                 action = form.get("action")
-                post_url = urljoin(self.target, action)
+                post_url = urljoin(self.target, action) if action else self.target
                 method = form.get("method", "get").lower()
                 inputs = form.find_all("input")
                 
-                data = {}
-                for input_tag in inputs:
-                    if input_tag.get("type") in ["text", "search"]:
-                        # Payload: Basic SQL Injection test
-                        data[input_tag.get("name")] = "' OR '1'='1"
+                data_keys = [input_tag.get("name") or "q" for input_tag in inputs if input_tag.get("type") in ["text", "search", "password", "email", None]]
                 
-                if data:
-                    self.print_log(f"Testing SQL Injection on {post_url}...", "INFO")
-                    try:
-                        if method == "post":
-                            res = session.post(post_url, data=data, timeout=5)
-                        else:
-                            res = session.get(post_url, params=data, timeout=5)
+                if data_keys:
+                    # SQL Injection Fuzzing
+                    sqli_payloads = [
+                        "' OR '1'='1",
+                        "admin' --",
+                        "1' ORDER BY 1--+",
+                        "1' UNION SELECT null,null--+",
+                        "1 AND (SELECT * FROM (SELECT(SLEEP(5)))a)" # Time-based
+                    ]
+                    
+                    self.print_log(f"Fuzzing SQL Injection on {post_url}...", "INFO")
+                    for payload in sqli_payloads:
+                        data = {k: payload for k in data_keys}
+                        try:
+                            start_time = time.time()
+                            if method == "post":
+                                res = session.post(post_url, data=data, timeout=10)
+                            else:
+                                res = session.get(post_url, params=data, timeout=10)
+                            elapsed_time = time.time() - start_time
 
-                        # Detection of classic SQL errors in response
-                        errors = ["mysql_fetch_array", "syntax error", "ORA-01756", "SQLServer", "SQL syntax"]
-                        if any(e in res.text for e in errors):
-                            msg = f"Potential SQL Injection found on {post_url}"
-                            self.print_log(msg, "VULN")
-                            self.results["web_vulnerabilities"].append({"type": "SQLi", "url": post_url})
-                    except Exception:
-                        pass
+                            # Detection of classic SQL errors
+                            errors = ["mysql_fetch_array", "syntax error", "ORA-01756", "SQLServer", "SQL syntax", "Unclosed quotation mark"]
+                            if any(e in res.text for e in errors):
+                                self.print_log(f"Potential Error-Based SQLi found on {post_url}", "VULN")
+                                self.results["web_vulnerabilities"].append({"type": f"SQLi (Error)", "url": post_url})
+                                break # Move to next form if found
+                            
+                            # Detection of Time-Based SQLi
+                            if elapsed_time > 4.5 and "SLEEP" in payload:
+                                self.print_log(f"Potential Time-Based SQLi found on {post_url}", "VULN")
+                                self.results["web_vulnerabilities"].append({"type": f"SQLi (Time-Based)", "url": post_url})
+                                break
+                        except Exception:
+                            pass
 
-                    # XSS Test: inject a unique marker and check if it's reflected unescaped
-                    XSS_PAYLOAD = "<script>alert('NEMESIS_XSS')</script>"
-                    xss_data = {k: XSS_PAYLOAD for k in data}
-                    self.print_log(f"Testing XSS on {post_url}...", "INFO")
-                    try:
-                        if method == "post":
-                            res = session.post(post_url, data=xss_data, timeout=5)
-                        else:
-                            res = session.get(post_url, params=xss_data, timeout=5)
+                    # XSS Fuzzing
+                    xss_payloads = [
+                        "<script>alert('NEMESIS_XSS')</script>",
+                        "\"><script>alert('NEMESIS_XSS')</script>",
+                        "<img src=x onerror=alert('NEMESIS_XSS')>",
+                        "javascript:alert('NEMESIS_XSS')",
+                        "'-alert('NEMESIS_XSS')-'"
+                    ]
+                    
+                    self.print_log(f"Fuzzing XSS on {post_url}...", "INFO")
+                    for payload in xss_payloads:
+                        data = {k: payload for k in data_keys}
+                        try:
+                            if method == "post":
+                                res = session.post(post_url, data=data, timeout=5)
+                            else:
+                                res = session.get(post_url, params=data, timeout=5)
 
-                        if XSS_PAYLOAD in res.text:
-                            msg = f"Potential Reflected XSS found on {post_url}"
-                            self.print_log(msg, "VULN")
-                            self.results["web_vulnerabilities"].append({"type": "XSS", "url": post_url})
-                    except Exception:
-                        pass
-
-            # 2. Security Headers Audit
-            headers = response.headers
-            security_headers = ["X-Frame-Options", "Content-Security-Policy", "Strict-Transport-Security", "X-XSS-Protection"]
-            for h in security_headers:
-                if h not in headers:
-                    self.results["security_headers"][h] = "MISSING"
-                    self.print_log(f"Missing Security Header: {h}", "ERROR")
-                else:
-                    self.results["security_headers"][h] = "PRESENT"
+                            if payload in res.text:
+                                self.print_log(f"Potential Reflected XSS found on {post_url}", "VULN")
+                                self.results["web_vulnerabilities"].append({"type": f"XSS", "url": post_url})
+                                break # Move to next form if found
+                        except Exception:
+                            pass
 
         except Exception as e:
             self.print_log(f"Error during Web Scan: {e}", "ERROR")
@@ -315,154 +362,9 @@ class NemesisScanner: # Main Scanner Class
             self.print_log("Scan finished. (Use -o argument to save report)", "INFO")
             return
 
-        if self.output_file.endswith(".html"):
-            self._save_html_report()
-        else:
-            with open(self.output_file, "w") as f:
-                json.dump(self.results, f, indent=4)
-            self.print_log(f"Report saved to {self.output_file}", "SUCCESS")
-
-    def _save_html_report(self):
-        r = self.results
-        vuln_count = len(r["web_vulnerabilities"])
-        port_count = len(r["open_ports"])
-        path_count = len(r["discovered_paths"])
-        missing_headers = [h for h, v in r["security_headers"].items() if v == "MISSING"]
-
-        def _ports_rows():
-            if not r["open_ports"]:
-                return '<tr><td colspan="2" class="empty">No open ports found</td></tr>'
-            return "".join(
-                f'<tr><td><span class="badge badge-open">{p["port"]}</span></td>'
-                f'<td class="banner">{p["banner"] or "—"}</td></tr>'
-                for p in r["open_ports"]
-            )
-
-        def _vulns_rows():
-            if not r["web_vulnerabilities"]:
-                return '<tr><td colspan="2" class="empty">No vulnerabilities found</td></tr>'
-            return "".join(
-                f'<tr><td><span class="badge badge-vuln">{v["type"]}</span></td>'
-                f'<td class="banner">{v["url"]}</td></tr>'
-                for v in r["web_vulnerabilities"]
-            )
-
-        def _headers_rows():
-            if not r["security_headers"]:
-                return '<tr><td colspan="2" class="empty">No data</td></tr>'
-            return "".join(
-                f'<tr><td>{h}</td>'
-                f'<td><span class="badge {"badge-open" if v == "PRESENT" else "badge-vuln"}">{v}</span></td></tr>'
-                for h, v in r["security_headers"].items()
-            )
-
-        def _tech_rows():
-            if not r["technologies"]:
-                return '<tr><td colspan="3" class="empty">No technologies identified</td></tr>'
-            return "".join(
-                f'<tr><td><span class="badge badge-warn">{t["category"]}</span></td>'
-                f'<td>{t["name"]}</td>'
-                f'<td class="banner">{t["source"]}</td></tr>'
-                for t in r["technologies"]
-            )
-
-        def _paths_rows():
-            if not r["discovered_paths"]:
-                return '<tr><td colspan="2" class="empty">No paths found</td></tr>'
-            color_map = {200: "badge-open", 403: "badge-warn", 301: "badge-warn", 302: "badge-warn", 201: "badge-open"}
-            return "".join(
-                f'<tr><td><span class="badge {color_map.get(p["status"], "badge-warn")}">{p["status"]}</span></td>'
-                f'<td class="banner">{p["url"]}</td></tr>'
-                for p in r["discovered_paths"]
-            )
-
-        html = f"""<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>NEMESIS Report — {r["target"]}</title>
-  <style>
-    *, *::before, *::after {{ box-sizing: border-box; margin: 0; padding: 0; }}
-    body {{ font-family: 'Segoe UI', system-ui, sans-serif; background: #0d1117; color: #c9d1d9; }}
-    header {{ background: linear-gradient(135deg, #6e40c9, #1f6feb); padding: 2rem; text-align: center; }}
-    header h1 {{ font-size: 2rem; letter-spacing: 4px; color: #fff; }}
-    header p {{ margin-top: .4rem; color: #ccc; font-size: .9rem; }}
-    .summary {{ display: flex; gap: 1rem; padding: 1.5rem 2rem; flex-wrap: wrap; }}
-    .card {{ flex: 1; min-width: 150px; background: #161b22; border: 1px solid #30363d;
-             border-radius: 8px; padding: 1.2rem; text-align: center; }}
-    .card .num {{ font-size: 2.2rem; font-weight: 700; }}
-    .card .label {{ font-size: .8rem; color: #8b949e; margin-top: .3rem; text-transform: uppercase; }}
-    .num.danger {{ color: #f85149; }}
-    .num.warn {{ color: #e3b341; }}
-    .num.ok {{ color: #3fb950; }}
-    section {{ margin: 0 2rem 2rem; }}
-    section h2 {{ font-size: 1rem; text-transform: uppercase; letter-spacing: 2px;
-                  color: #8b949e; border-bottom: 1px solid #30363d; padding-bottom: .5rem; margin-bottom: 1rem; }}
-    table {{ width: 100%; border-collapse: collapse; background: #161b22;
-             border: 1px solid #30363d; border-radius: 8px; overflow: hidden; }}
-    th {{ background: #21262d; color: #8b949e; font-size: .75rem; text-transform: uppercase;
-          letter-spacing: 1px; padding: .7rem 1rem; text-align: left; }}
-    td {{ padding: .65rem 1rem; border-top: 1px solid #21262d; font-size: .875rem; }}
-    td.banner {{ font-family: monospace; word-break: break-all; color: #a5d6ff; }}
-    td.empty {{ text-align: center; color: #484f58; padding: 1.5rem; }}
-    .badge {{ display: inline-block; padding: .2em .6em; border-radius: 4px;
-              font-size: .78rem; font-weight: 600; font-family: monospace; }}
-    .badge-open {{ background: #1f4b2e; color: #3fb950; }}
-    .badge-vuln {{ background: #3d1c1c; color: #f85149; }}
-    .badge-warn {{ background: #3d2e00; color: #e3b341; }}
-    footer {{ text-align: center; padding: 1.5rem; color: #484f58; font-size: .8rem; }}
-  </style>
-</head>
-<body>
-  <header>
-    <h1>N E M E S I S</h1>
-    <p>Security Audit Report &nbsp;|&nbsp; Target: <strong>{r["target"]}</strong> &nbsp;|&nbsp; {r["scan_time"]}</p>
-  </header>
-
-  <div class="summary">
-    <div class="card"><div class="num {'danger' if port_count else 'ok'}">{port_count}</div><div class="label">Open Ports</div></div>
-    <div class="card"><div class="num {'danger' if vuln_count else 'ok'}">{vuln_count}</div><div class="label">Vulnerabilities</div></div>
-    <div class="card"><div class="num {'warn' if missing_headers else 'ok'}">{len(missing_headers)}</div><div class="label">Missing Headers</div></div>
-    <div class="card"><div class="num {'warn' if path_count else 'ok'}">{path_count}</div><div class="label">Exposed Paths</div></div>
-  </div>
-
-  <section>
-    <h2>Open Ports</h2>
-    <table><thead><tr><th>Port</th><th>Banner</th></tr></thead>
-    <tbody>{_ports_rows()}</tbody></table>
-  </section>
-
-  <section>
-    <h2>Technologies Detected</h2>
-    <table><thead><tr><th>Category</th><th>Technology</th><th>Source</th></tr></thead>
-    <tbody>{_tech_rows()}</tbody></table>
-  </section>
-
-  <section>
-    <h2>Web Vulnerabilities</h2>
-    <table><thead><tr><th>Type</th><th>URL</th></tr></thead>
-    <tbody>{_vulns_rows()}</tbody></table>
-  </section>
-
-  <section>
-    <h2>Security Headers</h2>
-    <table><thead><tr><th>Header</th><th>Status</th></tr></thead>
-    <tbody>{_headers_rows()}</tbody></table>
-  </section>
-
-  <section>
-    <h2>Discovered Paths</h2>
-    <table><thead><tr><th>Code</th><th>URL</th></tr></thead>
-    <tbody>{_paths_rows()}</tbody></table>
-  </section>
-
-  <footer>Generated by NEMESIS Security Scanner — Educational use only</footer>
-</body>
-</html>"""
-
         with open(self.output_file, "w") as f:
-            f.write(html)
-        self.print_log(f"HTML report saved to {self.output_file}", "SUCCESS")
+            json.dump(self.results, f, indent=4)
+        self.print_log(f"Report saved to {self.output_file}", "SUCCESS")
 
 # CLI ARGUMENTS
 if __name__ == "__main__":
